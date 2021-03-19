@@ -2,105 +2,111 @@
   <h1>
     modal challenge
   </h1>
-  <div>
-    <input
-      id="check1"
-      type="checkbox"
-      name="check1"
-      v-model="checkbox1"
-    >
-    <label for="check1">チェック1</label>
 
+  <div v-for="checkbox in checkboxes" :key="checkbox.id">
     <input
-      id="check2"
+      v-model="checkbox.isCheck"
+      :id="checkbox.name"
       type="checkbox"
-      name="check2"
-      v-model="checkbox2"
     >
-    <label for="check2">チェック2</label>
-
-    <input
-      id="check3"
-      type="checkbox"
-      name="check3"
-      v-model="checkbox3"
-    >
-    <label for="check3">チェック3</label>
+    <label :for="checkbox.name">{{ checkbox.label }}</label>
   </div>
-  <button @click="showModals">表示</button>
 
-  <div v-if="activateModal">
-    <div v-if="modal1" class="modal">
-      <h2>モーダル1</h2>
-      <p>
-        テストテストテスト
-      </p>
-      <button @click="modal1 = !modal1">閉じる</button>
+  <button @click="clickActivate">表示</button>
+
+  <div v-if="showModal">
+    <div v-for="modal in modals" :key="modal.id">
+      <Modal
+        :modal="modal"
+        @change="changeModalActive"
+      />
     </div>
-
-    <div v-if="modal2" class="modal">
-      <h2>モーダル2</h2>
-      <p>
-        テストテストテスト
-      </p>
-      <button @click="modal2 = !modal2">閉じる</button>
-    </div>
-
-    <div v-if="modal3" class="modal">
-      <h2>モーダル3</h2>
-      <p>
-        テストテストテスト
-      </p>
-      <button @click="modal3 = !modal3">閉じる</button>
-    </div>
-
     <div
       class="overlay"
-      @click="closeModals"
+      @click="clickDeactivate"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+import {
+  defineComponent,
+  ref,
+} from 'vue'
+import Modal from '~/components/Modal.vue'
 
 export default defineComponent({
   name: 'App',
+  components: {
+    Modal
+  },
   setup() {
-    const activateModal = ref(false)
-    const checkbox1 = ref(false)
-    const checkbox2 = ref(false)
-    const checkbox3 = ref(false)
-    const modal1 = ref(false)
-    const modal2 = ref(false)
-    const modal3 = ref(false)
-    
-    const showModals = () => {
-      modal1.value = checkbox1.value
-      modal2.value = checkbox2.value
-      modal3.value = checkbox3.value
+    const showModal = ref(false)
 
-      activateModal.value = true
+    const checkboxes = ref([
+      {
+        id: 1,
+        name: 'check1',
+        label: 'チェック1',
+        isCheck: false,
+      },
+      {
+        id: 2,
+        name: 'check2',
+        label: 'チェック2',
+        isCheck: false,
+      },
+      {
+        id: 3,
+        name: 'check3',
+        label: 'チェック3',
+        isCheck: false,
+      }
+    ])
+    const modals = ref([])
+
+    const clickActivate = () => {
+      // FIXME: TSで型を指定しないと…
+      modals.value = checkboxes.value.map(checkbox => {
+        return {
+          id: checkbox.id,
+          active: checkbox.isCheck
+        }
+      })
+
+      showModal.value = true
     }
 
-    const closeModals = () => {
-      modal1.value = false
-      modal2.value = false
-      modal3.value = false
+    const clickDeactivate = () => {
+      showModal.value = false
+    }
 
-      activateModal.value = false
+    const changeModalActive = ({ id, active }) => {
+      const modalsMap = modals.value.map(modal => {
+        if (modal.id == id) {
+          return {
+            id,
+            active
+          }
+        }
+        return modal
+      })
+      modals.value = modalsMap
+
+      const result = modals.value.find(modal => modal.active)
+      if (!result) {
+        showModal.value = false
+      }
     }
 
     return {
-      activateModal,
-      closeModals,
-      showModals,
-      checkbox1,
-      checkbox2,
-      checkbox3,
-      modal1,
-      modal2,
-      modal3
+      showModal,
+      count,
+      checkboxes,
+      modals,
+      clickActivate,
+      clickDeactivate,
+      changeModalActive,
     }
   }
 })
@@ -124,16 +130,5 @@ export default defineComponent({
   z-index: 10;
   transition: all .5s ease;
   opacity: 0.7;
-}
-
-.modal {
-  padding: 15px;
-  width: 480px;
-  z-index: 15;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #fff;
 }
 </style>
