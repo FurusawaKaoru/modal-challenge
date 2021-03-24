@@ -1,139 +1,49 @@
 <template>
-  <h1>
-    modal challenge
-  </h1>
-
-  <div v-for="checkbox in checkboxes" :key="checkbox.id">
-    <input
-      v-model="checkbox.isCheck"
-      :id="checkbox.name"
-      type="checkbox"
-    >
-    <label :for="checkbox.name">{{ checkbox.label }}</label>
+  <img alt="Vue logo" src="/~/assets/logo.png" />
+  <button @click="show" :disabled="modals.length === 0">モーダルを開く</button>
+  <button @click="createModal(`Modal${modals.length + 1}`)">
+    モーダルを追加
+  </button>
+  <div v-for="modal in modals" :key="modal.name">
+    <label :for="modal.name">{{ modal.name }}</label>
+    <input :id="modal.name" type="checkbox" v-model="modal.active" />
   </div>
-
-  <button @click="show">表示</button>
-
-  <div v-if="isShow">
-    <template v-for="modal in modals" :key="modal.id">
-      <div v-if="modal.active">
-        <div class="modal">
-          <Modal :modal="modal" @close="closeModal" />
-        </div>
-      </div>
-    </template>
-    <div
-      class="overlay"
-      @click="hide"
-    />
-  </div>
+  <teleport to="#modal">
+    <div v-if="visible" class="overlay" @click="dismiss">
+      <template v-for="modal in modals" :key="modal.name">
+        <ModalWindow class="center" v-if="modal.visible" :name="modal.name" />
+      </template>
+    </div>
+  </teleport>
 </template>
 
-<script lang="ts">
-import {
-  defineComponent,
-  ref,
-} from 'vue'
-import Modal from '~/components/Modal.vue'
-import { createModal } from '~/composables/modal'
-
-export type Checkbox = {
-  id: number,
-  name: string,
-  label: string,
-  isCheck: boolean
-}
-
-export type Modal = {
-  id: number,
-  active: boolean,
-  visible: boolean
-}
-
-export default defineComponent({
-  name: 'App',
-  components: {
-    Modal
-  },
-  setup() {
-    const checkboxes = ref<Checkbox[]>([
-      {
-        id: 1,
-        name: 'check1',
-        label: 'チェック1',
-        isCheck: false,
-      },
-      {
-        id: 2,
-        name: 'check2',
-        label: 'チェック2',
-        isCheck: false,
-      },
-      {
-        id: 3,
-        name: 'check3',
-        label: 'チェック3',
-        isCheck: false,
-      }
-    ])
-    const modals = ref<Modal[]>([])
-
-    const isShow = ref(false)
-    const show = () => {
-      modals.value = checkboxes.value.map(checkbox => {
-        return {
-          id: checkbox.id,
-          active: checkbox.isCheck,
-          visible: true
-        }
-      })
-
-      isShow.value = true
-    }
-    const hide = () => {
-      isShow.value = false
-    }
-
-    const closeModal = (modal:Modal) => {
-      // modalのvisibleをfalseにする
-    }
-
-    return {
-      checkboxes,
-      modals,
-      isShow,
-      show,
-      hide
-    }
-  }
-})
+<script setup lang="ts">
+import { useCreateModal, useModals } from '~/composables/modal'
+import { useOverlay } from '~/composables/overlay'
+import ModalWindow from '~/components/ModalWindow.vue'
+const { modals, show } = useModals()
+const { visible, dismiss } = useOverlay()
+const { createModal } = useCreateModal()
 </script>
 
-<style>
-.h1 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.modal {
+<style scoped>
+.overlay {
+  display: grid;
+  grid-template-columns: max-content;
+  grid-template-rows: max-content;
+  place-content: center;
   position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+}
+.overlay > .center {
+  position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 15;
-}
-
-.overlay {
-  background-color: #000;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-  transition: all .5s ease;
-  opacity: 0.7;
 }
 </style>
