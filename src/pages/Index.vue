@@ -12,18 +12,19 @@
     <label :for="checkbox.name">{{ checkbox.label }}</label>
   </div>
 
-  <button @click="clickActivate">表示</button>
+  <button @click="show">表示</button>
 
-  <div v-if="showModal">
-    <div v-for="modal in modals" :key="modal.id">
-      <Modal
-        :modal="modal"
-        @change="changeModalActive"
-      />
-    </div>
+  <div v-if="isShow">
+    <template v-for="modal in modals" :key="modal.id">
+      <div v-if="modal.active">
+        <div class="modal">
+          <Modal :modal="modal" @close="closeModal" />
+        </div>
+      </div>
+    </template>
     <div
       class="overlay"
-      @click="clickDeactivate"
+      @click="hide"
     />
   </div>
 </template>
@@ -34,6 +35,20 @@ import {
   ref,
 } from 'vue'
 import Modal from '~/components/Modal.vue'
+import { createModal } from '~/composables/modal'
+
+export type Checkbox = {
+  id: number,
+  name: string,
+  label: string,
+  isCheck: boolean
+}
+
+export type Modal = {
+  id: number,
+  active: boolean,
+  visible: boolean
+}
 
 export default defineComponent({
   name: 'App',
@@ -41,9 +56,7 @@ export default defineComponent({
     Modal
   },
   setup() {
-    const showModal = ref(false)
-
-    const checkboxes = ref([
+    const checkboxes = ref<Checkbox[]>([
       {
         id: 1,
         name: 'check1',
@@ -63,50 +76,34 @@ export default defineComponent({
         isCheck: false,
       }
     ])
-    const modals = ref([])
+    const modals = ref<Modal[]>([])
 
-    const clickActivate = () => {
-      // FIXME: TSで型を指定しないと…
+    const isShow = ref(false)
+    const show = () => {
       modals.value = checkboxes.value.map(checkbox => {
         return {
           id: checkbox.id,
-          active: checkbox.isCheck
+          active: checkbox.isCheck,
+          visible: true
         }
       })
 
-      showModal.value = true
+      isShow.value = true
+    }
+    const hide = () => {
+      isShow.value = false
     }
 
-    const clickDeactivate = () => {
-      showModal.value = false
-    }
-
-    const changeModalActive = ({ id, active }) => {
-      const modalsMap = modals.value.map(modal => {
-        if (modal.id == id) {
-          return {
-            id,
-            active
-          }
-        }
-        return modal
-      })
-      modals.value = modalsMap
-
-      const result = modals.value.find(modal => modal.active)
-      if (!result) {
-        showModal.value = false
-      }
+    const closeModal = (modal:Modal) => {
+      // modalのvisibleをfalseにする
     }
 
     return {
-      showModal,
-      count,
       checkboxes,
       modals,
-      clickActivate,
-      clickDeactivate,
-      changeModalActive,
+      isShow,
+      show,
+      hide
     }
   }
 })
@@ -116,6 +113,14 @@ export default defineComponent({
 .h1 {
   margin: 0;
   font-size: 16px;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 15;
 }
 
 .overlay {
